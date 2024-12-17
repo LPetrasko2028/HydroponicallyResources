@@ -72,13 +72,13 @@ function handleIntervalRelay(relayIndex) {
     
     // Turn on for the first x minutes of every interval for the interval window length
     if (currentMinute < relays[relayIndex].schedule.durationMinutes) {
-        if (relays[relayIndex].gpio.readSync() === offValue) {
-            relays[relayIndex].gpio.writeSync(onValue);
+        if (relays[relayIndex].gpio.readSync() === config.offValue) {
+            relays[relayIndex].gpio.writeSync(config.onValue);
             console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (hourly interval)`);
         }
     } else {
-        if (relays[relayIndex].gpio.readSync() === onValue) {
-            relays[relayIndex].gpio.writeSync(offValue);
+        if (relays[relayIndex].gpio.readSync() === config.onValue) {
+            relays[relayIndex].gpio.writeSync(config.offValue);
             console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned OFF (hourly interval)`);
         }
     }
@@ -93,11 +93,11 @@ function handleDailyRelay(relayIndex) {
     const shouldBeOn = currentMinutes >= onMinutes && currentMinutes < offMinutes;
     const currentState = relays[relayIndex].gpio.readSync();
     
-    if (shouldBeOn && currentState === offValue) {
-        relays[relayIndex].gpio.writeSync(onValue);
+    if (shouldBeOn && currentState === config.offValue) {
+        relays[relayIndex].gpio.writeSync(config.onValue);
         console.log(`${new Date().toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (daily schedule)`);
-    } else if (!shouldBeOn && currentState === onValue) {
-        relays[relayIndex].gpio.writeSync(offValue);
+    } else if (!shouldBeOn && currentState === config.onValue) {
+        relays[relayIndex].gpio.writeSync(config.offValue);
         console.log(`${new Date().toLocaleTimeString()} - ${relays[relayIndex].name} turned OFF (daily schedule)`);
     }
 }
@@ -117,7 +117,7 @@ function checkSchedule() {
 
 // Initialize all relays to off state
 relays.forEach(relay => {
-    relay.gpio.writeSync(offValue);
+    relay.gpio.writeSync(config.offValue);
     console.log(`Initialized ${relay.name} to OFF state`);
 });
 
@@ -139,7 +139,7 @@ checkSchedule();
 process.on('SIGINT', () => {
     clearInterval(schedulerInterval);
     relays.forEach(relay => {
-        relay.gpio.writeSync(offValue); // Turn off all relays
+        relay.gpio.writeSync(config.offValue); // Turn off all relays
         relay.gpio.unexport(); // Free resources
     });
     console.log('\nRelay scheduler stopped. All relays turned off.');
