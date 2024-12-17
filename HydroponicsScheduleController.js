@@ -1,4 +1,4 @@
-const { Gpio } = require('onoff');
+import { Gpio } from 'onoff';
 
 /* TODOs:
 
