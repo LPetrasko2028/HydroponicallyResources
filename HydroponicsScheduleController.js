@@ -1,5 +1,14 @@
 const { Gpio } = require('onoff');
 
+/* TODOs:
+
+- Integrate intervalMinutes into function - specifying the interval in minutes allows for more flexibility. Also want to add an intervalWindow to specify the time window for the interval (e.g. 2 minutes every hour, but only between 9:00 AM and 5:00 PM)
+- Test an interupt style over polling, pre-calculate timing for each day or given time period
+    - Pros: Hypothesis- more accurate timing (not subject to polling interval), less cpu usage and better power consumption
+    - Cons: Hypothesis- More complex code, more memory usage
+
+*/
+
 // Configuration for relay pins and schedule
 const config = {
     relays: [
@@ -31,7 +40,9 @@ const config = {
                 durationMinutes: 2
             }
          }  // 9 AM to 5 PM
-    ]
+    ],
+    onValue: 0,
+    offValue: 1
 };
 
 // Initialize GPIO pins for relays
@@ -54,26 +65,26 @@ function getCurrentMinutes() {
     return now.getHours() * 60 + now.getMinutes();
 }
 
-// Handle Relay 0 (2 minutes every hour)
+// Handle Interval Relay
 function handleIntervalRelay(relayIndex) {
     const now = new Date();
     const currentMinute = now.getMinutes();
     
-    // Turn on for the first x minutes of every hour
+    // Turn on for the first x minutes of every interval for the interval window length
     if (currentMinute < relays[relayIndex].schedule.durationMinutes) {
-        if (relays[relayIndex].gpio.readSync() === 0) {
-            relays[relayIndex].gpio.writeSync(1);
+        if (relays[relayIndex].gpio.readSync() === offValue) {
+            relays[relayIndex].gpio.writeSync(onValue);
             console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (hourly interval)`);
         }
     } else {
-        if (relays[relayIndex].gpio.readSync() === 1) {
-            relays[relayIndex].gpio.writeSync(0);
+        if (relays[relayIndex].gpio.readSync() === onValue) {
+            relays[relayIndex].gpio.writeSync(offValue);
             console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned OFF (hourly interval)`);
         }
     }
 }
 
-// Handle Relay 1 (9 AM to 5 PM)
+// Handle Daily Relay
 function handleDailyRelay(relayIndex) {
     const currentMinutes = getCurrentMinutes();
     const onMinutes = timeToMinutes(relays[relayIndex].schedule.onTime);
@@ -82,11 +93,11 @@ function handleDailyRelay(relayIndex) {
     const shouldBeOn = currentMinutes >= onMinutes && currentMinutes < offMinutes;
     const currentState = relays[relayIndex].gpio.readSync();
     
-    if (shouldBeOn && currentState === 0) {
-        relays[relayIndex].gpio.writeSync(1);
+    if (shouldBeOn && currentState === offValue) {
+        relays[relayIndex].gpio.writeSync(onValue);
         console.log(`${new Date().toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (daily schedule)`);
-    } else if (!shouldBeOn && currentState === 1) {
-        relays[relayIndex].gpio.writeSync(0);
+    } else if (!shouldBeOn && currentState === onValue) {
+        relays[relayIndex].gpio.writeSync(offValue);
         console.log(`${new Date().toLocaleTimeString()} - ${relays[relayIndex].name} turned OFF (daily schedule)`);
     }
 }
@@ -106,7 +117,7 @@ function checkSchedule() {
 
 // Initialize all relays to off state
 relays.forEach(relay => {
-    relay.gpio.writeSync(0);
+    relay.gpio.writeSync(offValue);
     console.log(`Initialized ${relay.name} to OFF state`);
 });
 
@@ -128,7 +139,7 @@ checkSchedule();
 process.on('SIGINT', () => {
     clearInterval(schedulerInterval);
     relays.forEach(relay => {
-        relay.gpio.writeSync(0); // Turn off all relays
+        relay.gpio.writeSync(offValue); // Turn off all relays
         relay.gpio.unexport(); // Free resources
     });
     console.log('\nRelay scheduler stopped. All relays turned off.');

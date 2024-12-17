@@ -1,0 +1,14 @@
+{ "name": "hydroponically-manual-controls",
+  "type": "module",
+  "version": "1.0.0",
+  "description": "initial code to control a hydroponic enviroment separate from the main repository/app structure (webapp).",
+  "main": "managePumpAndLights.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "onoff": "^6.0.3"
+  }
+}
