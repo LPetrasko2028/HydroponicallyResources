@@ -21,4 +21,4 @@ jobs:
       run: npm install
       
     - name: Run script
-      run: node HydroponicsScheduleController.js
+      run: sudo node HydroponicsScheduleController.js
