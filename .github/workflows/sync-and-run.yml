@@ -21,4 +21,10 @@ jobs:
       run: npm install
       
     - name: Run script
-      run: sudo node HydroponicsScheduleController.js
+      run: |
+        # Stop any existing instance
+        sudo pm2 stop your-script || true
+        # Start new instance
+        sudo pm2 start your-script.js
+        # Save PM2 configuration
+        sudo pm2 save
