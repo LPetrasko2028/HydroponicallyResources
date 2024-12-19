@@ -23,14 +23,14 @@ const config = {
             schedule: {
                 type: 'daily',
                 onTime: '09:00',
-                offTime: '17:00'
+                offTime: '19:00'
             }
          },  // 9 AM to 5 PM
         { pin: 531, name: 'LightingCircuitRelay2',
             schedule: {
                 type: 'daily',
                 onTime: '09:00',
-                offTime: '17:00'
+                offTime: '19:00'
             }
          }, // 2 minutes every hour
         { pin: 538, name: 'WaterCircuitRelay2',
