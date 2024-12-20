@@ -39,8 +39,8 @@ const config = {
                 intervalMinutes: 30,
                 durationMinutes: 2,
                 IntervalWindow: [
-                    { startTime: '09:00', endTime: '17:00' },
-                    { startTime: '21:00', endTime: '05:00' }
+                    { startTime: '00:00', endTime: '22:00' },
+                    { startTime: '23:01', endTime: '24:00' }
                 ]
             }
          }  
