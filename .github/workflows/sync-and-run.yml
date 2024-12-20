@@ -23,8 +23,8 @@ jobs:
     - name: Run script
       run: |
         # Stop any existing instance
-        pm2 stop HydroponicsScheduleController || true
+        sudo pm2 stop HydroponicsScheduleController || true
         # Start new instance
-        pm2 start HydroponicsScheduleController.js
+        sudo pm2 start HydroponicsScheduleController.js
         # Save PM2 configuration
-        pm2 save
+        sudo pm2 save
