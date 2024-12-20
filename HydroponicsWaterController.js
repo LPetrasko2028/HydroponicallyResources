@@ -182,7 +182,8 @@ async function main() {
         },
         timing: {
             nutrientDeliveryInterval: 1000,    // 1 second nutrient pump duration
-            phAdjustmentInterval: 500         // 0.5 second pH adjustment duration
+            phAdjustmentInterval: 500,         // 0.5 second pH adjustment duration
+            mixingTime: 15000                   // 15 second mixing time
         },
         relays: [
             { pin: 518, name: 'nutrientA' },
@@ -208,7 +209,7 @@ async function main() {
             clearInterval(interval);
             controller.cleanup();
         }
-    }, mixingTime + 5000); // Check every 30 seconds
+    }, mixingTime + 5000);
 
     // Cleanup on exit
     process.on('SIGINT', () => {
