@@ -3,9 +3,6 @@ import { Gpio } from 'onoff';
 /* TODOs:
 
 - Integrate intervalMinutes into function - specifying the interval in minutes allows for more flexibility. Also want to add an intervalWindow to specify the time window for the interval (e.g. 2 minutes every hour, but only between 9:00 AM and 5:00 PM)
-- Test an interupt style over polling, pre-calculate timing for each day or given time period
-    - Pros: Hypothesis- more accurate timing (not subject to polling interval), less cpu usage and better power consumption
-    - Cons: Hypothesis- More complex code, more memory usage
 
 */
 
@@ -22,15 +19,15 @@ const config = {
         { pin: 525, name: 'LightingCircuitRelay',
             schedule: {
                 type: 'daily',
-                startTime: '00:00',
-                stopTime: '24:00'
+                startTime: '09:00',
+                stopTime: '17:00'
             }
          },
         { pin: 531, name: 'LightingCircuitRelay2',
             schedule: {
                 type: 'daily',
-                startTime: '00:00',
-                stopTime: '24:00'
+                startTime: '09:00',
+                stopTime: '17:00'
             }
          },
         { pin: 538, name: 'WaterCircuitRelay2',
@@ -87,12 +84,12 @@ function handleIntervalRelay(relayIndex) {
     if ((currentMinutes % relays[relayIndex].schedule.intervalMinutes) <= (relays[relayIndex].schedule.durationMinutes)){
         if (relays[relayIndex].gpio.readSync() === config.offValue) {
             relays[relayIndex].gpio.writeSync(config.onValue);
-            console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (hourly interval)`);
+            console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (${relays[relayIndex].schedule.intervalMinutes} minute interval)`);
         }
     } else {
         if (relays[relayIndex].gpio.readSync() === config.onValue) {
             relays[relayIndex].gpio.writeSync(config.offValue);
-            console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned OFF (hourly interval)`);
+            console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned OFF (${relays[relayIndex].schedule.intervalMinutes} minute interval)`);
         }
     }
 }
