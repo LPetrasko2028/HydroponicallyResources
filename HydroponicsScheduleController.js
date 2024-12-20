@@ -84,12 +84,12 @@ function handleIntervalRelay(relayIndex) {
     if ((currentMinutes % relays[relayIndex].schedule.intervalMinutes) <= (relays[relayIndex].schedule.durationMinutes)){
         if (relays[relayIndex].gpio.readSync() === config.offValue) {
             relays[relayIndex].gpio.writeSync(config.onValue);
-            console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (${relays[relayIndex].schedule.intervalMinutes} minute interval)`);
+            console.log(`${new Date().toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (${relays[relayIndex].schedule.intervalMinutes} minute interval)`);
         }
     } else {
         if (relays[relayIndex].gpio.readSync() === config.onValue) {
             relays[relayIndex].gpio.writeSync(config.offValue);
-            console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned OFF (${relays[relayIndex].schedule.intervalMinutes} minute interval)`);
+            console.log(`${new Date().toLocaleTimeString()} - ${relays[relayIndex].name} turned OFF (${relays[relayIndex].schedule.intervalMinutes} minute interval)`);
         }
     }
 }
