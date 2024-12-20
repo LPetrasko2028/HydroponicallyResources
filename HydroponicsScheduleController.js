@@ -15,34 +15,39 @@ const config = {
         { pin: 518, name: 'WaterCircuitRelay', 
             schedule: {
                 type: 'interval',
-                intervalMinutes: 60,
+                intervalMinutes: 30,
                 durationMinutes: 2
             }
-        }, // 2 minutes every hour
+        },
         { pin: 525, name: 'LightingCircuitRelay',
             schedule: {
                 type: 'daily',
-                onTime: '09:00',
-                offTime: '17:00'
+                startTime: '09:00',
+                stopTime: '17:00'
             }
-         },  // 9 AM to 5 PM
+         },
         { pin: 531, name: 'LightingCircuitRelay2',
             schedule: {
                 type: 'daily',
-                onTime: '09:00',
-                offTime: '17:00'
+                startTime: '09:00',
+                stopTime: '17:00'
             }
-         }, // 2 minutes every hour
+         },
         { pin: 538, name: 'WaterCircuitRelay2',
             schedule: {
                 type: 'interval',
-                intervalMinutes: 60,
-                durationMinutes: 2
+                intervalMinutes: 30,
+                durationMinutes: 2,
+                IntervalWindow: [
+                    { startTime: '09:00', endTime: '17:00' },
+                    { startTime: '21:00', endTime: '05:00' }
+                ]
             }
-         }  // 9 AM to 5 PM
+         }  
     ],
     onValue: 0,
-    offValue: 1
+    offValue: 1,
+    checkInterval: 15000
 };
 
 // Initialize GPIO pins for relays
@@ -67,11 +72,19 @@ function getCurrentMinutes() {
 
 // Handle Interval Relay
 function handleIntervalRelay(relayIndex) {
-    const now = new Date();
-    const currentMinute = now.getMinutes();
-    
+    const relay = relays[relayIndex];
+
+    const currentMinutes = getCurrentMinutes();
+
+    if ( relay.schedule.hasOwnProperty('IntervalWindow') ) {         // Check if IntervalWindow is defined
+        const notInIntervalWindow = relay.schedule.IntervalWindow.every(intervalWindow => {
+            return currentMinutes < timeToMinutes(intervalWindow.startTime) || currentMinutes > timeToMinutes(intervalWindow.endTime);
+        });
+        if (notInIntervalWindow) { return; }                         // If not in interval window, return
+    }
+
     // Turn on for the first x minutes of every interval for the interval window length
-    if (currentMinute < relays[relayIndex].schedule.durationMinutes) {
+    if ((currentMinutes % relays[relayIndex].schedule.intervalMinutes) < (relays[relayIndex].schedule.durationMinutes)){
         if (relays[relayIndex].gpio.readSync() === config.offValue) {
             relays[relayIndex].gpio.writeSync(config.onValue);
             console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (hourly interval)`);
@@ -87,8 +100,8 @@ function handleIntervalRelay(relayIndex) {
 // Handle Daily Relay
 function handleDailyRelay(relayIndex) {
     const currentMinutes = getCurrentMinutes();
-    const onMinutes = timeToMinutes(relays[relayIndex].schedule.onTime);
-    const offMinutes = timeToMinutes(relays[relayIndex].schedule.offTime);
+    const onMinutes = timeToMinutes(relays[relayIndex].schedule.startTime);
+    const offMinutes = timeToMinutes(relays[relayIndex].schedule.stopTime);
     
     const shouldBeOn = currentMinutes >= onMinutes && currentMinutes < offMinutes;
     const currentState = relays[relayIndex].gpio.readSync();
@@ -123,14 +136,9 @@ relays.forEach(relay => {
 
 // Run the scheduler
 console.log('Relay scheduler started. Press Ctrl+C to exit.');
-console.log(`Relay 1 will turn ON for 2 minutes at the start of every hour`);
-console.log(`Relay 2 will turn ON at 9:00 AM and OFF at 5:00 PM daily`);
-console.log(`Relay 3 will turn ON at 9:00 AM and OFF at 5:00 PM daily`);
-console.log(`Relay 4 will turn ON for 2 minutes at the start of every hour`);
-
 
 // Check every 30 seconds to ensure we don't miss state changes
-const schedulerInterval = setInterval(checkSchedule, 30000);
+const schedulerInterval = setInterval(checkSchedule, config.checkInterval);
 
 // Run immediately on start
 checkSchedule();
