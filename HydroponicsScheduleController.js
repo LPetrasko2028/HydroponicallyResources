@@ -22,15 +22,15 @@ const config = {
         { pin: 525, name: 'LightingCircuitRelay',
             schedule: {
                 type: 'daily',
-                startTime: '09:00',
-                stopTime: '18:00'
+                startTime: '00:00',
+                stopTime: '24:00'
             }
          },
         { pin: 531, name: 'LightingCircuitRelay2',
             schedule: {
                 type: 'daily',
-                startTime: '09:00',
-                stopTime: '18:00'
+                startTime: '00:00',
+                stopTime: '24:00'
             }
          },
         { pin: 538, name: 'WaterCircuitRelay2',
