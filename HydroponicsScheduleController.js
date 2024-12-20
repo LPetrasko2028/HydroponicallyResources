@@ -18,15 +18,17 @@ const config = {
         { pin: 525, name: 'LightingCircuitRelay',
             schedule: {
                 type: 'daily',
-                startTime: '09:00',
-                stopTime: '17:00'
+                events: [
+                    { startTime: '09:00', stopTime: '17:00' }
+                ]
             }
          },
         { pin: 531, name: 'LightingCircuitRelay2',
             schedule: {
                 type: 'daily',
-                startTime: '09:00',
-                stopTime: '17:00'
+                events: [
+                    { startTime: '09:00', stopTime: '17:00' }
+                ]
             }
          },
         { pin: 538, name: 'WaterCircuitRelay2',
@@ -103,19 +105,18 @@ function handleIntervalRelay(relayIndex) {
 
 // Handle Daily Relay
 function handleDailyRelay(relayIndex) {
+    const relay = relays[relayIndex];
     const currentMinutes = getCurrentMinutes();
-    const onMinutes = timeToMinutes(relays[relayIndex].schedule.startTime);
-    const offMinutes = timeToMinutes(relays[relayIndex].schedule.stopTime);
-    
-    const shouldBeOn = currentMinutes >= onMinutes && currentMinutes < offMinutes;
-    const currentState = relays[relayIndex].gpio.readSync();
+
+    const shouldBeOn = relay.schedule.events.some(event => currentMinutes >= timeToMinutes(event.startTime) && currentMinutes < timeToMinutes(event.stopTime));
+    const currentState = relay.gpio.readSync();
     
     if (shouldBeOn && currentState === config.offValue) {
-        relays[relayIndex].gpio.writeSync(config.onValue);
-        console.log(`${new Date().toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (daily schedule)`);
+        relay.gpio.writeSync(config.onValue);
+        console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned ON (daily schedule)`);
     } else if (!shouldBeOn && currentState === config.onValue) {
-        relays[relayIndex].gpio.writeSync(config.offValue);
-        console.log(`${new Date().toLocaleTimeString()} - ${relays[relayIndex].name} turned OFF (daily schedule)`);
+        relay.gpio.writeSync(config.offValue);
+        console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned OFF (daily schedule)`);
     }
 }
 
