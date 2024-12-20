@@ -36,7 +36,7 @@ const config = {
         { pin: 538, name: 'WaterCircuitRelay2',
             schedule: {
                 type: 'interval',
-                intervalMinutes: 30,
+                intervalMinutes: 15,
                 durationMinutes: 2,
                 IntervalWindow: [
                     { startTime: '00:00', endTime: '22:00' },
@@ -84,7 +84,7 @@ function handleIntervalRelay(relayIndex) {
     }
 
     // Turn on for the first x minutes of every interval for the interval window length
-    if ((currentMinutes % relays[relayIndex].schedule.intervalMinutes) < (relays[relayIndex].schedule.durationMinutes)){
+    if ((currentMinutes % relays[relayIndex].schedule.intervalMinutes) <= (relays[relayIndex].schedule.durationMinutes)){
         if (relays[relayIndex].gpio.readSync() === config.offValue) {
             relays[relayIndex].gpio.writeSync(config.onValue);
             console.log(`${now.toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (hourly interval)`);
