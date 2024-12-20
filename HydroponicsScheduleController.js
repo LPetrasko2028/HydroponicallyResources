@@ -12,8 +12,7 @@ const config = {
         { pin: 518, name: 'WaterCircuitRelay', 
             schedule: {
                 type: 'interval',
-                intervalMinutes: 30,
-                durationMinutes: 2
+                interval: { intervalMinutes: 30, durationMinutes: 2 }
             }
         },
         { pin: 525, name: 'LightingCircuitRelay',
@@ -33,11 +32,13 @@ const config = {
         { pin: 538, name: 'WaterCircuitRelay2',
             schedule: {
                 type: 'interval',
-                intervalMinutes: 15,
-                durationMinutes: 2,
                 IntervalWindow: [
-                    { startTime: '00:00', endTime: '22:00' },
-                    { startTime: '23:01', endTime: '24:00' }
+                    { startTime: '08:00', endTime: '22:00',
+                        interval: { intervalMinutes: 15, durationMinutes: 2 }
+                    },
+                    { startTime: '22:00', endTime: '08:00',
+                        interval: { intervalMinutes: 60, durationMinutes: 2 }
+                    },
                 ]
             }
          }  
@@ -73,23 +74,29 @@ function handleIntervalRelay(relayIndex) {
 
     const currentMinutes = getCurrentMinutes();
 
+    let interval;
+
     if ( relay.schedule.hasOwnProperty('IntervalWindow') ) {         // Check if IntervalWindow is defined
         const notInIntervalWindow = relay.schedule.IntervalWindow.every(intervalWindow => {
-            return currentMinutes < timeToMinutes(intervalWindow.startTime) || currentMinutes > timeToMinutes(intervalWindow.endTime);
+            const bool = (currentMinutes < timeToMinutes(intervalWindow.startTime) || currentMinutes > timeToMinutes(intervalWindow.endTime));
+            if (!bool) { interval = intervalWindow.interval; }
+            return bool;
         });
         if (notInIntervalWindow) { return; }                         // If not in interval window, return
+    } else {
+        interval = relay.schedule.interval;
     }
 
     // Turn on for the first x minutes of every interval for the interval window length
-    if ((currentMinutes % relays[relayIndex].schedule.intervalMinutes) <= (relays[relayIndex].schedule.durationMinutes)){
+    if ((currentMinutes % interval.intervalMinutes) <= (interval.durationMinutes)){
         if (relays[relayIndex].gpio.readSync() === config.offValue) {
             relays[relayIndex].gpio.writeSync(config.onValue);
-            console.log(`${new Date().toLocaleTimeString()} - ${relays[relayIndex].name} turned ON (${relays[relayIndex].schedule.intervalMinutes} minute interval)`);
+            console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned ON (${interval.intervalMinutes} minute interval)`);
         }
     } else {
         if (relays[relayIndex].gpio.readSync() === config.onValue) {
             relays[relayIndex].gpio.writeSync(config.offValue);
-            console.log(`${new Date().toLocaleTimeString()} - ${relays[relayIndex].name} turned OFF (${relays[relayIndex].schedule.intervalMinutes} minute interval)`);
+            console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned OFF (${interval.intervalMinutes} minute interval)`);
         }
     }
 }
