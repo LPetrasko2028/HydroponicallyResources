@@ -23,7 +23,7 @@ const config = {
             schedule: {
                 type: 'daily',
                 startTime: '09:00',
-                stopTime: '17:00'
+                stopTime: '18:00'
             }
          },
         { pin: 531, name: 'LightingCircuitRelay2',
