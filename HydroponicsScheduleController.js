@@ -35,10 +35,14 @@ const config = {
             schedule: {
                 type: 'interval',
                 IntervalWindow: [
+                    {
+                        startTime: '00:00', endTime: '08:00',
+                        interval: { intervalMinutes: 60, durationMinutes: 2 }
+                    },
                     { startTime: '08:00', endTime: '22:00',
                         interval: { intervalMinutes: 15, durationMinutes: 2 }
                     },
-                    { startTime: '22:00', endTime: '08:00',
+                    { startTime: '20:00', endTime: '24:00',
                         interval: { intervalMinutes: 60, durationMinutes: 2 }
                     },
                 ]
@@ -93,11 +97,16 @@ function handleIntervalRelay(relayIndex) {
     if ((currentMinutes % interval.intervalMinutes) <= (interval.durationMinutes)){
         if (relays[relayIndex].gpio.readSync() === config.offValue) {
             relays[relayIndex].gpio.writeSync(config.onValue);
+            console.log("relay", relay);
+            
+            console.log(`Interval Relay: ${relay.name} turned ON (${interval.intervalMinutes} minute interval) for ${relay.schedule.interval.durationMinutes} minutes`);
+            
             console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned ON (${interval.intervalMinutes} minute interval)`);
         }
     } else {
         if (relays[relayIndex].gpio.readSync() === config.onValue) {
             relays[relayIndex].gpio.writeSync(config.offValue);
+            console.log("relay", relay);
             console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned OFF (${interval.intervalMinutes} minute interval)`);
         }
     }
