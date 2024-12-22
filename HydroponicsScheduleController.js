@@ -99,9 +99,10 @@ function handleIntervalRelay(relayIndex) {
             relays[relayIndex].gpio.writeSync(config.onValue);
             console.log("relay", relay);
             
-            console.log(`Interval Relay: ${relay.name} turned ON (${interval.intervalMinutes} minute interval) for ${relay.schedule.interval.durationMinutes} minutes`);
+            console.log(`Interval Relay: ${relay.name} turned ON (${interval.intervalMinutes} minute interval) for ${interval.durationMinutes} minutes`);
             
             console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned ON (${interval.intervalMinutes} minute interval)`);
+            // relay.lastRunTime = new Date();
         }
     } else {
         if (relays[relayIndex].gpio.readSync() === config.onValue) {
@@ -123,6 +124,7 @@ function handleDailyRelay(relayIndex) {
     if (shouldBeOn && currentState === config.offValue) {
         relay.gpio.writeSync(config.onValue);
         console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned ON (daily schedule)`);
+        // relay.lastRunTime = new Date();
     } else if (!shouldBeOn && currentState === config.onValue) {
         relay.gpio.writeSync(config.offValue);
         console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned OFF (daily schedule)`);
