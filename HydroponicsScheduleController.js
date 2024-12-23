@@ -97,17 +97,15 @@ function handleIntervalRelay(relayIndex) {
     if ((currentMinutes % interval.intervalMinutes) <= (interval.durationMinutes)){
         if (relays[relayIndex].gpio.readSync() === config.offValue) {
             relays[relayIndex].gpio.writeSync(config.onValue);
-            console.log("relay", relay);
-            
-            console.log(`Interval Relay: ${relay.name} turned ON (${interval.intervalMinutes} minute interval) for ${interval.durationMinutes} minutes`);
-            
-            console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned ON (${interval.intervalMinutes} minute interval)`);
+            // console.log("relay", relay);
+            // console.log(`Interval Relay: ${relay.name} turned ON (${interval.intervalMinutes} minute interval) for ${interval.durationMinutes} minutes`);
+            console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned ON (${interval.intervalMinutes} minute interval, for ${interval.durationMinutes} minutes)`);
             // relay.lastRunTime = new Date();
         }
     } else {
         if (relays[relayIndex].gpio.readSync() === config.onValue) {
             relays[relayIndex].gpio.writeSync(config.offValue);
-            console.log("relay", relay);
+            // console.log("relay", relay);
             console.log(`${new Date().toLocaleTimeString()} - ${relay.name} turned OFF (${interval.intervalMinutes} minute interval)`);
         }
     }
