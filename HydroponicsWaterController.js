@@ -1,19 +1,11 @@
 import { Gpio } from 'onoff';
 
-// import readPHSensor from './readPHSensor.js';
-// import readNutrientSensor from './readNutrientSensor.js';
+import ArduinoController from './ArduinoController.js';
 
 export default class HydroponicsWaterController {
     constructor(config) {
-        // Initialize relays (assuming active low relays)
-        this.relays = {
-            nutrientA: new Gpio(config.pins.nutrientA, 'out', { activeLow: true }),
-            nutrientB: new Gpio(config.pins.nutrientB, 'out', { activeLow: true }),
-            phUp: new Gpio(config.pins.phUp, 'out', { activeLow: true }),
-            phDown: new Gpio(config.pins.phDown, 'out', { activeLow: true })
-        };
         // Store relays
-        this.relays1 = config.relays.map(relay => ({
+        this.relays = config.relays.map(relay => ({
             gpio: new Gpio(relay.pin, 'out', { activeLow: true }),
             name: relay.name
         }));
@@ -37,8 +29,21 @@ export default class HydroponicsWaterController {
             mixingTime: config.timing.mixingTime                 // mixing time duration
         };
 
+        // Relay on/off values
+        this.onValue = config.onValue;
+        this.offValue = config.offValue;
+
+        // Initialize Arduino Controller
+        this.arduinoController = new ArduinoController(config.arduinoController);
+
         // Initialize all pumps to off
         this.stopAllPumps();
+    }
+
+    TDSLoop() {
+        // Send request for TDS data
+        this.arduinoController.sendRequestForSensorData('TDS');
+        wh
     }
 
     // Read sensor values (implement your specific sensor reading logic here)
@@ -159,6 +164,7 @@ export default class HydroponicsWaterController {
     cleanup() {
         this.stopAllPumps();
         Object.values(this.relays).forEach(relay => relay.unexport());
+        this.arduinoController.cleanup();
         console.log('System cleaned up');
     }
 }

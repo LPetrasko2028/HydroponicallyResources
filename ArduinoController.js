@@ -1,11 +1,19 @@
 import SerialPort from 'serialport';
 
+const exampleConfig = {
+    serial: {
+        port: '/dev/ttyUSB0',
+        baudRate: 9600,
+        autoOpen: false,
+    }
+    // TODO: Add a auto usb finding capability
+};
 export default class ArduinoController {
 
     constructor(config) {
-        this.port = new SerialPort('/dev/ttyUSB0', {
-            baudRate: 9600,
-            autoOpen: false,
+        this.port = new SerialPort(config.serial.port, {
+            baudRate: config.serial.baudRate,
+            autoOpen: config.serial.autoOpen,
         });
         this.port.open((err) => {
             if (err) {
@@ -14,30 +22,48 @@ export default class ArduinoController {
             console.log('Serial port opened');
         });
         
-        this.port.on('data', (data) => {
-          console.log('Received data: ', data.toString());
+        this.port.on('data', (value) => {
+          console.log('Received Serial Port data: ', value.toString());
+            this.values.push({ value, time: new Date() });
         });
         
         this.port.on('error', (err) => {
-          console.log('Error: ', err.message);
+          console.log('Serial Port Error: ', err.message);
         });
+
+        this.values = [];
         
     }
 
     // Send a request for sensor data to the Arduino
-    async sendData(data) {
+    // Data is a string and can be {pH, TDS, temp}
+    async sendRequestForSensorData(data) {
         try {
-            await port.write(data);
+            await port.write(data+'\n');
         } catch (error) {
             console.error('Error sending data:', error);
             throw error;
         }
     }
+
+    async endDataStream() {
+        try {
+            await port.write('end\n');
+        } catch (error) {
+            console.error('Error sending end data:', error);
+            throw error;
+        }
+    }
+
+    clearValues() {
+        this.values = [];
+    }
+
+    cleanup() {
+        this.endDataStream();
+        this.clearValues();
+    }
 }
-// TODO: Add a auto usb finding capability
-
-
-
 
 // Clean up on exit
 process.on('SIGINT', () => {

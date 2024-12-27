@@ -1,0 +1,1 @@
+ls /dev/ttyUSB* | head -n 1
