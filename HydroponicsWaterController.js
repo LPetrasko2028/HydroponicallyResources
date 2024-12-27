@@ -3,7 +3,7 @@ import { Gpio } from 'onoff';
 // import readPHSensor from './readPHSensor.js';
 // import readNutrientSensor from './readNutrientSensor.js';
 
-class HydroponicsWaterController {
+export default class HydroponicsWaterController {
     constructor(config) {
         // Initialize relays (assuming active low relays)
         this.relays = {
