@@ -5,7 +5,11 @@ import ArduinoController from './ArduinoController.js';
 export default class HydroponicsWaterController {
     constructor(config) {
         // Store relays
-        this.relays = config.relays.map(relay => ({
+        this.phRelays = config.relays.filter(relay => relay.name === 'phUp' || relay.name === 'phDown').map(relay => ({
+            gpio: new Gpio(relay.pin, 'out', { activeLow: true }),
+            name: relay.name
+        }));
+        this.nutrientRelays = config.relays.filter(relay => relay.name.includes('nutrient')).map(relay => ({
             gpio: new Gpio(relay.pin, 'out', { activeLow: true }),
             name: relay.name
         }));
@@ -40,11 +44,64 @@ export default class HydroponicsWaterController {
         this.stopAllPumps();
     }
 
-    TDSLoop() {
+    async TDSLoop() {
         // Send request for TDS data
         this.arduinoController.sendRequestForSensorData('TDS');
-        wh
+        while (this.arduinoController.values[this.arduinoController.values.length - 1].value < this.targetLevels.nutrient - this.tolerance.nutrient) {
+            // turn on the nutrient pumps for increments of x for appropriate ratios of nutrient parts
+            this.nutrientRelays.forEach(relay => relay.writeSync(this.onValue));
+            await new Promise(resolve => setTimeout(resolve, this.timing.nutrient));
+            this.nutrientRelays.forEach(relay => relay.writeSync(this.onValue));
+            await new Promise(resolve => setTimeout(resolve, this.timing.mixingTime));
+        }
+        // stop the sensor data stream
+        this.arduinoController.endDataStream();
+
+        // Save the data
+        // send arduinoController.values to the database
+
+        // clear the values
+        this.arduinoController.clearValues();
     }
+
+    async pHLoop() {
+        // Send request for pH data
+        this.arduinoController.sendRequestForSensorData('pH');
+        while (this.arduinoController.values[this.arduinoController.values.length - 1].value < this.targetLevels.ph - this.tolerance.ph || this.arduinoController.values[this.arduinoController.values.length - 1].value > this.targetLevels.ph + this.tolerance.ph) {
+            if (this.arduinoController.values[this.arduinoController.values.length - 1].value < this.targetLevels.ph - this.tolerance.ph) {
+                this.phRelays.filter(relay => relay.name === 'phUp').forEach(relay => relay.writeSync(this.onValue));
+                await new Promise(resolve => setTimeout(resolve, this.timing.ph));
+                this.phRelays.filter(relay => relay.name === 'phUp').forEach(relay => relay.writeSync(this.offValue));
+                await new Promise(resolve => setTimeout(resolve, this.timing.mixingTime));
+            } else {
+                this.phRelays.filter(relay => relay.name === 'phDown').forEach(relay => relay.writeSync(this.onValue));
+                await new Promise(resolve => setTimeout(resolve, this.timing.ph));
+                this.phRelays.filter(relay => relay.name === 'phDown').forEach(relay => relay.writeSync(this.offValue));
+                await new Promise(resolve => setTimeout(resolve, this.timing.mixingTime));
+            }
+        }
+        // stop the sensor data stream
+        this.arduinoController.endDataStream();
+        // Save the data
+        // send arduinoController.values to the database
+
+        // clear the values
+        this.arduinoController.clearValues();
+    }
+
+    async getTemperature() {
+        this.arduinoController.sendRequestForSensorData('temp');
+        // wait for the data to come in
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        // stop the sensor data stream
+        this.arduinoController.endDataStream();
+        // Save the data
+        // send arduinoController.values to the database
+
+        // clear the values
+        this.arduinoController.clearValues();
+    }
+
 
     // Read sensor values (implement your specific sensor reading logic here)
     async readSensors() {
