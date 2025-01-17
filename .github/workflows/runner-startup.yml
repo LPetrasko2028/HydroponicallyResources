@@ -1,0 +1,20 @@
+# name: Runner Startup Tasks
+# on:
+#   workflow_dispatch:  # Manual trigger
+#   runner_workflow:    # Triggers when runner starts
+#     types: [started]
+
+# jobs:
+#   startup-tasks:
+#     runs-on: self-hosted
+#     steps:
+#       - name: Checkout repository
+#         uses: actions/checkout@v4
+        
+#       - name: Run startup tasks
+#         run: |
+#           # Add your startup commands here
+#           echo "Runner started, executing initialization tasks..."
+#           # For example:
+#           # ./scripts/setup-environment.sh
+#           # docker-compose up -d

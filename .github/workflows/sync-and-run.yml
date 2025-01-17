@@ -11,6 +11,27 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
+
+
+    - name: Install Arduino CLI
+      uses: arduino/setup-arduino-cli@v1.1.1
+      with:
+        arduino-cli-version: '0.19.0'
+
+    - name: Update Arduino CLI
+      run: arduino-cli core update-index
+      
+
+
+    - name: Install Arduino core
+      run: arduino-cli core install arduino:avr
+
+    - name: compile code for Arduino
+      run: arduino-cli compile --fqbn arduino:avr:uno ./ArduinoController
+      
+    - name: Upload the code to the Arduino
+      run: arduino-cli upload -p /dev/ttyUSB0 --fqbn arduino:avr:uno ./ArduinoController
+      
       
     - name: Setup Node.js
       uses: actions/setup-node@v3
@@ -19,14 +40,8 @@ jobs:
         
     - name: Install dependencies
       run: npm install
-      
+
+    
     - name: Run script
       run: |
-        # Stop any existing instance
-                
-        sudo pm2 delete HydroponicsScheduleController || true
-        sudo pm2 save
-        # Start new instance
-        sudo pm2 start HydroponicsScheduleController.js
-        # Save PM2 configuration
-        sudo pm2 save
+        ./scripts/startup/start.sh

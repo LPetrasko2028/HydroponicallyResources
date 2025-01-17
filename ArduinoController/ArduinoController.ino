@@ -7,7 +7,14 @@ int TDSInputPin = A0;
 int pHInputPin = A2;
 int tempInputPin = A4;
 
+int TDSBoardOnPin = 12;
+int pHAndTempBoardOnPin = 13;
+
 void setup() {
+
+  pinMode(TDSBoardOnPin, OUTPUT);
+  pinMode(pHAndTempBoardOnPin, OUTPUT);
+
   // Initialize serial communication at 9600 baud rate
   Serial.begin(9600);
   while (!Serial) {
@@ -48,25 +55,35 @@ void processReceivedData() {
   // You can add more complex processing here
   // For example, parse commands and respond accordingly
   if (strcmp(inputBuffer, "pH") == 0) {
-    genLoop(pHInputPin);
+    GenLoop(pHInputPin);
   }
   else if (strcmp(inputBuffer, "TDS") == 0) {
-    genLoop(TDSInputPin);
+    GenLoop(TDSInputPin);
   }
   else if (strcmp(inputBuffer, "temp") == 0) {
-    genLoop(tempInputPin);
+    GenLoop(tempInputPin);
   }
 }
 
 void GenLoop(int sensorPin) {
+  if (sensorPin == A0){
+    digitalWrite(TDSBoardOnPin, HIGH);
+  } else if (sensorPin == A2 || sensorPin == A4) {
+    digitalWrite(pHAndTempBoardOnPin, HIGH);
+  }
   while (Serial.available() == 0) {
     int sensorValue = getAndSmoothSensorData(sensorPin);
 
     // Send sensor data to the Raspberry Pi
-    Serial.print("Sensor reading: ");
+    // Serial.print("Sensor reading: ");
     Serial.println(sensorValue);
     delay(500);
 
+  }
+  if (sensorPin == A0){
+    digitalWrite(TDSBoardOnPin, LOW);
+  } else if (sensorPin == A2 || sensorPin == A4) {
+    digitalWrite(pHAndTempBoardOnPin, LOW);
   }
 
 }

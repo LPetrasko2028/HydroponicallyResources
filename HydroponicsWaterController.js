@@ -1,6 +1,8 @@
 import { Gpio } from 'onoff';
 
-import ArduinoController from './ArduinoController.js';
+// import { sendSensorDataToDatabase } from '';
+
+import { startScheduler, stopScheduler, arduinoController } from './HydroponicallyResourcesMain.js';
 
 export default class HydroponicsWaterController {
     constructor(config) {
@@ -37,17 +39,20 @@ export default class HydroponicsWaterController {
         this.onValue = config.onValue;
         this.offValue = config.offValue;
 
-        // Initialize Arduino Controller
-        this.arduinoController = new ArduinoController(config.arduinoController);
-
         // Initialize all pumps to off
         this.stopAllPumps();
+
+        this.timeout = false;
     }
 
     async TDSLoop() {
+        this.startTimeout();
         // Send request for TDS data
-        this.arduinoController.sendRequestForSensorData('TDS');
-        while (this.arduinoController.values[this.arduinoController.values.length - 1].value < this.targetLevels.nutrient - this.tolerance.nutrient) {
+        arduinoController.sendRequestForSensorData('TDS');
+        // wait for the data to come in
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        while (!this.timeout && arduinoController.values[arduinoController.values.length - 1].value < this.targetLevels.nutrient - this.tolerance.nutrient) {
             // turn on the nutrient pumps for increments of x for appropriate ratios of nutrient parts
             this.nutrientRelays.forEach(relay => relay.writeSync(this.onValue));
             await new Promise(resolve => setTimeout(resolve, this.timing.nutrient));
@@ -55,20 +60,27 @@ export default class HydroponicsWaterController {
             await new Promise(resolve => setTimeout(resolve, this.timing.mixingTime));
         }
         // stop the sensor data stream
-        this.arduinoController.endDataStream();
+        arduinoController.endDataStream();
 
         // Save the data
         // send arduinoController.values to the database
-
+        console.log(arduinoController.values);
+        // await sendSensorDataToDatabase('TDS', arduinoController.values);
+        // dataType is a string that is TDS, pH, or temp
+        
         // clear the values
-        this.arduinoController.clearValues();
+        arduinoController.clearValues();
     }
 
     async pHLoop() {
+        this.startTimeout();
         // Send request for pH data
-        this.arduinoController.sendRequestForSensorData('pH');
-        while (this.arduinoController.values[this.arduinoController.values.length - 1].value < this.targetLevels.ph - this.tolerance.ph || this.arduinoController.values[this.arduinoController.values.length - 1].value > this.targetLevels.ph + this.tolerance.ph) {
-            if (this.arduinoController.values[this.arduinoController.values.length - 1].value < this.targetLevels.ph - this.tolerance.ph) {
+        arduinoController.sendRequestForSensorData('pH');
+        // wait for the data to come in
+        await new Promise(resolve => setTimeout(resolve, 2000));
+
+        while (!this.timeout && arduinoController.values[arduinoController.values.length - 1].value < this.targetLevels.ph - this.tolerance.ph || arduinoController.values[arduinoController.values.length - 1].value > this.targetLevels.ph + this.tolerance.ph) {
+            if (arduinoController.values[arduinoController.values.length - 1].value < this.targetLevels.ph - this.tolerance.ph) {
                 this.phRelays.filter(relay => relay.name === 'phUp').forEach(relay => relay.writeSync(this.onValue));
                 await new Promise(resolve => setTimeout(resolve, this.timing.ph));
                 this.phRelays.filter(relay => relay.name === 'phUp').forEach(relay => relay.writeSync(this.offValue));
@@ -81,140 +93,65 @@ export default class HydroponicsWaterController {
             }
         }
         // stop the sensor data stream
-        this.arduinoController.endDataStream();
+        arduinoController.endDataStream();
         // Save the data
         // send arduinoController.values to the database
+        console.log(arduinoController.values);
+        // await sendSensorDataToDatabase('pH', arduinoController.values);
 
         // clear the values
-        this.arduinoController.clearValues();
+        arduinoController.clearValues();
     }
 
     async getTemperature() {
-        this.arduinoController.sendRequestForSensorData('temp');
+        arduinoController.sendRequestForSensorData('temp');
         // wait for the data to come in
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(resolve => setTimeout(resolve, 2000));
         // stop the sensor data stream
-        this.arduinoController.endDataStream();
+        arduinoController.endDataStream();
         // Save the data
         // send arduinoController.values to the database
+        console.log(arduinoController.values);
+        // await sendSensorDataToDatabase('temp', arduinoController.values);
 
         // clear the values
-        this.arduinoController.clearValues();
-    }
-
-
-    // Read sensor values (implement your specific sensor reading logic here)
-    async readSensors() {
-        try {
-            // Replace these with actual sensor reading implementation
-            // This is where you'd interface with your pH and nutrient sensors
-            return {
-                nutrientLevel: await this.readNutrientSensor(),
-                phLevel: await this.readPhSensor()
-            };
-        } catch (error) {
-            console.error('Sensor reading error:', error);
-            throw error;
-        }
-    }
-
-    // Example nutrient sensor reading implementation
-    async readNutrientSensor() {
-        // Implement your nutrient sensor reading logic here
-        // This is just a placeholder
-        return new Promise((resolve) => {
-            // Replace with actual sensor reading
-            resolve(0); // Return actual PPM reading
-        });
-    }
-
-    // Example pH sensor reading implementation
-    async readPhSensor() {
-        // Implement your pH sensor reading logic here
-        // This is just a placeholder
-        return new Promise((resolve) => {
-            // Replace with actual sensor reading
-            resolve(0); // Return actual pH reading
-        });
-    }
-
-    // Control functions for pumps
-    async adjustNutrients(currentLevel) {
-        console.log(`Current nutrient level: ${currentLevel}ppm, Target: ${this.targetLevels.nutrient}ppm`);
-        
-        if (currentLevel < this.targetLevels.nutrient - this.tolerance.nutrient) {
-            console.log('Adding nutrients...');
-            
-            // Run both nutrient pumps simultaneously
-            this.relays.nutrientA.writeSync(0); // ON
-            this.relays.nutrientB.writeSync(0); // ON
-            
-            await new Promise(resolve => setTimeout(resolve, this.timing.nutrient));
-            
-            this.relays.nutrientA.writeSync(1); // OFF
-            this.relays.nutrientB.writeSync(1); // OFF
-            
-            // Wait for mixing
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            return true;
-        }
-        return false;
-    }
-
-    async adjustPH(currentPH) {
-        console.log(`Current pH: ${currentPH}, Target: ${this.targetLevels.ph}`);
-        
-        if (Math.abs(currentPH - this.targetLevels.ph) > this.tolerance.ph) {
-            if (currentPH > this.targetLevels.ph) {
-                console.log('Adding pH down...');
-                this.relays.phDown.writeSync(0); // ON
-                await new Promise(resolve => setTimeout(resolve, this.timing.ph));
-                this.relays.phDown.writeSync(1); // OFF
-            } else {
-                console.log('Adding pH up...');
-                this.relays.phUp.writeSync(0); // ON
-                await new Promise(resolve => setTimeout(resolve, this.timing.ph));
-                this.relays.phUp.writeSync(1); // OFF
-            }
-            
-            // Wait for mixing
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            return true;
-        }
-        return false;
+        arduinoController.clearValues();
     }
 
     stopAllPumps() {
-        // Set all relays to OFF (1 for active low relays)
-        Object.values(this.relays).forEach(relay => relay.writeSync(1));
+        // Set all relays to OFF
+        Object.values(this.relays).forEach(relay => relay.writeSync(this.offValue));
         console.log('All pumps stopped');
     }
 
     // Main control loop
     async maintainLevels() {
-        try {
-            let adjustmentsMade = false;
-            const readings = await this.readSensors();
-            
-            // Check and adjust nutrients
-            if (await this.adjustNutrients(readings.nutrientLevel)) {
-                adjustmentsMade = true;
-            }
-            
-            // Check and adjust pH
-            if (await this.adjustPH(readings.phLevel)) {
-                adjustmentsMade = true;
-            }
-            
-            return {
-                adjustmentsMade,
-                readings
-            };
-        } catch (error) {
-            console.error('Error in control loop:', error);
-            this.stopAllPumps();
-            throw error;
-        }
+        console.log('Starting water controller');
+        // -------- Stop the scheduler -------- ( to prevent interference with the water controller )
+        /*
+            The water pump must be on while nutrient and pH levels are being adjusted and recorded
+            to insure mixing occurs correctly.
+        */
+        stopScheduler();
+
+        // -------- Adjust and Record the Nutrient Levels --------
+        this.TDSLoop();
+        // -------- Adjust and Record the pH Levels --------
+        this.pHLoop();
+        // -------- Record the Temperature --------
+        this.getTemperature();
+
+        // -------- Restart the scheduler --------
+        startScheduler();
+
+        console.log('Water controller stopped');
+    }
+
+    startTimeout() {
+        this.timeout = false;
+        setTimeout(() => {
+            this.timeout = true;
+        }, 15000);
     }
 
     // Cleanup
@@ -227,7 +164,8 @@ export default class HydroponicsWaterController {
 }
 
 // Example usage
-async function main() {
+
+/*
     const config = {
         pins: {
             nutrientA: 17,    // GPIO pin for Nutrient A pump
@@ -256,34 +194,4 @@ async function main() {
         ] // Relay list as param allows flexibility for different nutrient brands with more than 2 parts
 
     };
-
-    const controller = new HydroponicsWaterController(config);
-
-    // Control loop
-    const interval = setInterval(async () => {
-        try {
-            const result = await controller.maintainLevels();
-            
-            if (!result.adjustmentsMade) {
-                console.log('Levels within target range:', result.readings);
-            }
-        } catch (error) {
-            console.error('Control loop error:', error);
-            clearInterval(interval);
-            controller.cleanup();
-        }
-    }, mixingTime + 5000);
-
-    // Cleanup on exit
-    process.on('SIGINT', () => {
-        clearInterval(interval);
-        controller.cleanup();
-        process.exit();
-    });
-}
-
-// Start the system
-main().catch(error => {
-    console.error('System error:', error);
-    process.exit(1);
-});
+*/
